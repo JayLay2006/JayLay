@@ -1,14 +1,354 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="main-style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คลื่น — ฟังเพลง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15131C; --ink2:#1D1A26; --ink3:#252230;
+    --paper:#EDE8DE; --amber:#E8A33D; --rose:#C65B7C; --teal:#2E9E85;
+    --line:rgba(237,232,222,0.12);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--ink); color:var(--paper);
+    font-family:'Noto Sans Thai','Space Grotesk',sans-serif;
+    line-height:1.6; min-height:100vh;
+  }
+  h1,h2,h3{font-family:'Space Grotesk','Noto Sans Thai',sans-serif; font-weight:700; letter-spacing:-0.01em;}
+  a,button{color:inherit; text-decoration:none; font-family:inherit;}
+  button{cursor:pointer; border:none; background:none;}
+  input{font-family:inherit; color:var(--paper); background:var(--ink3); border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-size:14px; width:100%;}
+  input:focus{outline:none; border-color:var(--amber);}
+  .hidden{display:none !important;}
+
+  /* ---------- Auth screen ---------- */
+  #auth-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .auth-box{width:100%; max-width:380px;}
+  .auth-logo{display:flex; align-items:center; gap:8px; font-size:24px; font-weight:700; margin-bottom:8px; justify-content:center;}
+  .auth-logo .dot{width:9px; height:9px; border-radius:50%; background:var(--amber);}
+  .auth-sub{text-align:center; opacity:0.55; font-size:14px; margin-bottom:36px;}
+  .auth-tabs{display:flex; background:var(--ink2); border-radius:10px; padding:4px; margin-bottom:24px;}
+  .auth-tab{flex:1; text-align:center; padding:10px; font-size:14px; font-weight:600; border-radius:8px; opacity:0.55;}
+  .auth-tab.active{background:var(--ink3); opacity:1; color:var(--amber);}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; opacity:0.6; margin-bottom:6px;}
+  .auth-error{font-size:13px; color:var(--rose); margin-bottom:14px; min-height:1px;}
+  .btn-primary{background:var(--amber); color:var(--ink); padding:13px; font-size:14px; font-weight:700; border-radius:8px; width:100%; margin-top:6px;}
+  .btn-guest{width:100%; text-align:center; font-size:13px; opacity:0.55; margin-top:18px; padding:8px;}
+  .btn-guest:hover{opacity:0.9;}
+
+  /* ---------- App shell ---------- */
+  #app{display:none; min-height:100vh; flex-direction:column;}
+  header{position:sticky; top:0; z-index:20; background:rgba(21,19,28,0.9); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);}
+  nav{display:flex; align-items:center; justify-content:space-between; padding:18px 32px; max-width:1100px; margin:0 auto;}
+  .logo{font-size:20px; font-weight:700; display:flex; align-items:center; gap:8px;}
+  .logo .dot{width:8px; height:8px; border-radius:50%; background:var(--amber);}
+  .user-chip{display:flex; align-items:center; gap:12px; font-size:13px;}
+  .user-chip .avatar{width:30px; height:30px; border-radius:50%; background:var(--rose); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;}
+  .logout-btn{opacity:0.5; font-size:13px;}
+  .logout-btn:hover{opacity:1; color:var(--rose);}
+
+  main{flex:1; padding:48px 32px 140px; max-width:1100px; margin:0 auto; width:100%;}
+  .section-head{margin-bottom:24px;}
+  .section-head h2{font-size:24px;}
+  .section-head p{font-size:13px; opacity:0.5; margin-top:4px;}
+
+  .track-list{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:48px;}
+  .track-row{
+    display:flex; align-items:center; gap:16px; padding:14px 18px;
+    border-bottom:1px solid var(--line); transition:background 0.15s;
+  }
+  .track-row:last-child{border-bottom:none;}
+  .track-row:hover{background:var(--ink2);}
+  .track-row.playing{background:var(--ink3);}
+  .t-cover{width:40px; height:40px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px;}
+  .t-info{flex:1; min-width:0;}
+  .t-info .name{font-size:14px; font-weight:600;}
+  .t-info .by{font-size:12px; opacity:0.5;}
+  .t-dur{font-size:12px; opacity:0.4; font-variant-numeric:tabular-nums;}
+  .t-play{width:32px; height:32px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0;}
+  .track-row.playing .t-play{border-color:var(--amber); color:var(--amber);}
+
+  /* ---------- Player bar ---------- */
+  #player-bar{
+    position:fixed; bottom:0; left:0; right:0; z-index:30;
+    background:var(--ink2); border-top:1px solid var(--line);
+    padding:14px 24px; display:none; align-items:center; gap:20px;
+  }
+  #player-bar.visible{display:flex;}
+  .pb-cover{width:44px; height:44px; border-radius:8px; flex-shrink:0;}
+  .pb-info{width:170px; flex-shrink:0;}
+  .pb-info .name{font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pb-info .by{font-size:12px; opacity:0.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pb-controls{display:flex; align-items:center; gap:16px;}
+  .pb-btn{font-size:16px; opacity:0.7;}
+  .pb-btn:hover{opacity:1;}
+  .pb-play{width:36px; height:36px; border-radius:50%; background:var(--amber); color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:14px;}
+  .pb-progress{flex:1; display:flex; align-items:center; gap:10px;}
+  .pb-time{font-size:11px; opacity:0.45; font-variant-numeric:tabular-nums; width:36px;}
+  .pb-time.end{text-align:right;}
+  input[type="range"]{-webkit-appearance:none; width:100%; height:4px; background:rgba(237,232,222,0.15); border-radius:2px; padding:0;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--amber);}
+  .pb-volume{width:90px; display:flex; align-items:center; gap:6px; flex-shrink:0;}
+  .pb-volume span{font-size:14px; opacity:0.5;}
+
+  @media (max-width:760px){
+    .pb-info{width:100px;}
+    .pb-volume{display:none;}
+    main{padding:32px 20px 130px;}
+  }
+</style>
 </head>
 <body>
-    <h2>Recently Edited Files</h2>             
-    <list>
-        <li><a href="style.css">Index.html</a></li>
+
+<!-- ===================== AUTH SCREEN ===================== -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo"><span class="dot"></span>คลื่น</div>
+    <div class="auth-sub">แพลตฟอร์มเพลงอินดี้ไทย</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">สมัครสมาชิก</button>
+    </div>
+
+    <div class="auth-error" id="auth-error"></div>
+
+    <form id="login-form" onsubmit="return handleLogin(event)">
+      <div class="field"><label>อีเมล</label><input type="email" id="login-email" placeholder="you@email.com" required></div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" id="login-pass" placeholder="••••••••" required></div>
+      <button type="submit" class="btn-primary">เข้าสู่ระบบ</button>
+    </form>
+
+    <form id="signup-form" class="hidden" onsubmit="return handleSignup(event)">
+      <div class="field"><label>ชื่อที่แสดง</label><input type="text" id="signup-name" placeholder="ชื่อของคุณ" required></div>
+      <div class="field"><label>อีเมล</label><input type="email" id="signup-email" placeholder="you@email.com" required></div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" id="signup-pass" placeholder="อย่างน้อย 6 ตัวอักษร" required></div>
+      <button type="submit" class="btn-primary">สร้างบัญชี</button>
+    </form>
+
+    <button class="btn-guest" onclick="loginAsGuest()">เข้าใช้งานแบบผู้เยี่ยมชม →</button>
+  </div>
+</div>
+
+<!-- ===================== MAIN APP ===================== -->
+<div id="app">
+  <header>
+    <nav>
+      <div class="logo"><span class="dot"></span>คลื่น</div>
+      <div class="user-chip">
+        <span id="user-name-label"></span>
+        <div class="avatar" id="user-avatar">?</div>
+        <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="section-head">
+      <h2>เพลงแนะนำสำหรับคุณ</h2>
+      <p>คลิกที่เพลงเพื่อเริ่มฟัง</p>
+    </div>
+    <div class="track-list" id="track-list"></div>
+  </main>
+
+  <div id="player-bar">
+    <img class="pb-cover" id="pb-cover-img" src="" alt="">
+    <div class="pb-info">
+      <div class="name" id="pb-name">—</div>
+      <div class="by" id="pb-by">—</div>
+    </div>
+    <div class="pb-controls">
+      <button class="pb-btn" onclick="prevTrack()">⏮</button>
+      <button class="pb-play" id="pb-play-btn" onclick="togglePlay()">▶</button>
+      <button class="pb-btn" onclick="nextTrack()">⏭</button>
+    </div>
+    <div class="pb-progress">
+      <span class="pb-time" id="pb-current">0:00</span>
+      <input type="range" id="pb-seek" min="0" max="100" value="0">
+      <span class="pb-time end" id="pb-duration">0:00</span>
+    </div>
+    <div class="pb-volume">
+      <span>🔊</span>
+      <input type="range" id="pb-volume" min="0" max="100" value="70">
+    </div>
+  </div>
+
+  <audio id="audio-el"></audio>
+</div>
+
+<script>
+  /* ---------- in-memory "database" (resets on page reload — demo only) ---------- */
+  const accounts = [];
+  let currentUser = null;
+
+  const tracks = [
+    { name: "คิด(แต่ไม่)ถึง", by: "Tilly Birds", color: "#3D2E4A", src: "songs/คิด(แต่ไม่)ถึง.mp3" },
+    { name: "แค่เธอ", by: "Tilly Birds", color: "#3D2E4A", src: "songs/แค่เธอ.mp3" },
+    { name: "ฤดูร้อน", by: "Tilly Birds", color: "#3D2E4A", src: "songs/ฤดูร้อน.mp3" },
+  ];
+  let currentIndex = -1;
+
+  const audio = document.getElementById('audio-el');
+
+  /* ---------- auth ---------- */
+  function switchTab(tab){
+    document.getElementById('tab-login').classList.toggle('active', tab==='login');
+    document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+    document.getElementById('login-form').classList.toggle('hidden', tab!=='login');
+    document.getElementById('signup-form').classList.toggle('hidden', tab!=='signup');
+    document.getElementById('auth-error').textContent = '';
+  }
+
+  function handleSignup(e){
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim().toLowerCase();
+    const pass = document.getElementById('signup-pass').value;
+    const err = document.getElementById('auth-error');
+
+    if(pass.length < 6){ err.textContent = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'; return false; }
+    if(accounts.some(a => a.email === email)){ err.textContent = 'อีเมลนี้ถูกใช้สมัครแล้ว'; return false; }
+
+    accounts.push({ name, email, pass });
+    err.textContent = '';
+    enterApp({ name, email });
+    return false;
+  }
+
+  function handleLogin(e){
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const pass = document.getElementById('login-pass').value;
+    const err = document.getElementById('auth-error');
+
+    const acc = accounts.find(a => a.email === email && a.pass === pass);
+    if(!acc){ err.textContent = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง (บัญชีจะหายเมื่อรีเฟรชหน้า — นี่คือเดโม)'; return false; }
+
+    err.textContent = '';
+    enterApp(acc);
+    return false;
+  }
+
+  function loginAsGuest(){
+    enterApp({ name: 'ผู้เยี่ยมชม', email: 'guest' });
+  }
+
+  function enterApp(user){
+    currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('user-name-label').textContent = user.name;
+    document.getElementById('user-avatar').textContent = user.name.charAt(0).toUpperCase();
+    renderTrackList();
+  }
+
+  function logout(){
+    audio.pause();
+    currentIndex = -1;
+    document.getElementById('player-bar').classList.remove('visible');
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('login-form').reset();
+  }
+
+  /* ---------- track list ---------- */
+  function renderTrackList(){
+    const list = document.getElementById('track-list');
+    list.innerHTML = '';
+    tracks.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'track-row';
+      row.id = 'row-' + i;
+      row.innerHTML = `
+        <div class="t-cover" style="background:${t.color}">🎵</div>
+        <div class="t-info">
+          <div class="name">${t.name}</div>
+          <div class="by">${t.by}</div>
+        </div>
+        <div class="t-dur">--:--</div>
+        <div class="t-play">▶</div>
+      `;
+      row.onclick = () => playTrack(i);
+      list.appendChild(row);
+    });
+  }
+
+  /* ---------- player ---------- */
+  function playTrack(i){
+    currentIndex = i;
+    const t = tracks[i];
+    audio.src = t.src;
+    audio.play();
+    document.getElementById('pb-name').textContent = t.name;
+    document.getElementById('pb-by').textContent = t.by;
+    document.getElementById('pb-cover-img').style.background = t.color;
+    document.getElementById('player-bar').classList.add('visible');
+    document.querySelectorAll('.track-row').forEach(r => r.classList.remove('playing'));
+    document.getElementById('row-' + i).classList.add('playing');
+    document.querySelectorAll('.track-row .t-play').forEach(b => b.textContent = '▶');
+    document.querySelector('#row-' + i + ' .t-play').textContent = '⏸';
+  }
+
+  function togglePlay(){
+    if(currentIndex === -1){ playTrack(0); return; }
+    if(audio.paused){ audio.play(); } else { audio.pause(); }
+  }
+
+  function nextTrack(){
+    if(tracks.length === 0) return;
+    playTrack((currentIndex + 1) % tracks.length);
+  }
+  function prevTrack(){
+    if(tracks.length === 0) return;
+    playTrack((currentIndex - 1 + tracks.length) % tracks.length);
+  }
+
+  audio.addEventListener('play', () => {
+    document.getElementById('pb-play-btn').textContent = '⏸';
+    if(currentIndex >= 0) document.querySelector('#row-' + currentIndex + ' .t-play').textContent = '⏸';
+  });
+  audio.addEventListener('pause', () => {
+    document.getElementById('pb-play-btn').textContent = '▶';
+    if(currentIndex >= 0) document.querySelector('#row-' + currentIndex + ' .t-play').textContent = '▶';
+  });
+  audio.addEventListener('ended', nextTrack);
+
+  audio.addEventListener('timeupdate', () => {
+    if(!audio.duration) return;
+    document.getElementById('pb-seek').value = (audio.currentTime / audio.duration) * 100;
+    document.getElementById('pb-current').textContent = formatTime(audio.currentTime);
+  });
+  audio.addEventListener('loadedmetadata', () => {
+    document.getElementById('pb-duration').textContent = formatTime(audio.duration);
+    if(currentIndex >= 0){
+      document.querySelector('#row-' + currentIndex + ' .t-dur').textContent = formatTime(audio.duration);
+    }
+  });
+
+  document.getElementById('pb-seek').addEventListener('input', (e) => {
+    if(!audio.duration) return;
+    audio.currentTime = (e.target.value / 100) * audio.duration;
+  });
+  document.getElementById('pb-volume').addEventListener('input', (e) => {
+    audio.volume = e.target.value / 100;
+  });
+  audio.volume = 0.7;
+
+  function formatTime(sec){
+    if(isNaN(sec)) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+</script>
+
 </body>
 </html>
