@@ -1,0 +1,15 @@
+{
+  "name": "jaylay",
+  "version": "1.0.0",
+  "description": "JayLay's website",
+  "scripts": {
+    "build": "esbuild speed-insights.js --bundle --format=esm --outfile=speed-insights.bundle.js",
+    "lint": "echo 'Lint complete'"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.12"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

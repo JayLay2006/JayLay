@@ -1,0 +1,8 @@
+# Dependencies
+node_modules/
+
+# Build artifacts  
+.DS_Store
+
+# Speed Insights source (bundled version is committed)
+# speed-insights.bundle.js is intentionally tracked
